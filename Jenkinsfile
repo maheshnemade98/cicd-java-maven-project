@@ -1,9 +1,7 @@
 pipeline {
 
   agent any
-        tools {
-        maven "Maven"
-        }
+    
   environment {
     quay-credentials=credentials('quay-credentials') // Create a credentials in jenkins using your dockerhub username and token from https://hub.docker.com/settings/security
   }
