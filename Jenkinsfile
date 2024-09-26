@@ -1,21 +1,20 @@
 pipeline {
 
   agent any
-
+        tools {
+        maven "Maven"
+        }
   environment {
     quay-credentials=credentials('quay-credentials') // Create a credentials in jenkins using your dockerhub username and token from https://hub.docker.com/settings/security
   }
 
 
-  stages {
-
-    stage("Git Checkout") {
-      steps {
-        script {
-           sh "git clone https://github.com/DashrathMundkar/cicd-java-maven-project.git"
+ stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'maheshnemade98-patch-1', url: 'https://github.com/maheshnemade98/cicd-java-maven-project.git', credentialsId: "github"
+            }
         }
-      }
-    }
 
     stage("Maven Build") {
       steps {
@@ -25,12 +24,22 @@ pipeline {
       }
     }
 
-   stage("Run SonarQube Analysis") {
-      steps {
-        script {
-          withSonarQubeEnv('YOUR_SonarQube_INSTALLATION_NAME') {
-           sh 'mvn clean package sonar:sonar -Dsonar.profile="Sonar way"'
-          }
+   stage('SonarQube Scanner') {
+            steps {
+                script {
+                    def sonarScannerHome = tool name: 'sonar-scanner'
+                    withSonarQubeEnv('sonar-server') {
+                        sh """
+                        ${sonarScannerHome}/bin/sonar-scanner \
+                        -Dsonar.projectKey=sonar \
+                        -Dsonar.projectName=sonar \
+                        -Dsonar.projectSources=. \
+                        """
+                    }
+                }
+            }
+        }
+
           try {
             timeout(time: 5, unit: 'MINUTES') { // pipeline will be killed after a timeout
               def qg = waitForQualityGate()
@@ -49,8 +58,8 @@ pipeline {
       steps {
         script {
           sh 'echo $quay-credentials_PSW | docker login -u $quay-credentials_USR --password-stdin'
-          sh "docker build -t dash18/cicd-java-maven ."
-          sh "docker push dash18/cicd-java-maven"
+          sh "docker build -t quay.io/mahesh_nemade/cicd-java-maven ."
+          sh "docker push quay.io/mahesh_nemade/cicd-java-maven"
         }
       }
     }
